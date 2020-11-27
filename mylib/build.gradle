@@ -1,0 +1,175 @@
+plugins {
+    id 'groovy'
+    id 'maven'
+}
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven-publish'
+apply plugin: 'java'
+apply plugin: 'signing'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_7
+    targetCompatibility = JavaVersion.VERSION_1_7
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri("../repos")) // repos 为本地的地址，后续可以替换为网路上的 maven 库地址
+            pom.groupId = "com.don.plugin"
+            pom.artifactId = "demoplugin"
+            pom.version = "1.0.1"
+        }
+    }
+}
+
+group = "com.itsdon123.demoplugin"
+version = "1.0.4"
+project.archivesBaseName = "demoplugin"
+
+//生成源文件
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+//文档打包成jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+//拷贝javadoc文件
+task copyDoc(type: Copy) {
+    from "${buildDir}/docs/"
+    into "docs"
+}
+
+//上传到jcenter所需要的源码文件
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+
+//task javadocJar(type: Jar, dependsOn: javadoc) {
+//    classifier = 'javadoc'
+//    from javadoc.destinationDir
+//}
+//
+//task sourceJar(type: Jar) {
+//    classifier = 'sources'
+//    from sourceSets.main.allSource
+//}
+
+//ext {
+//    pomFilePath = "${project.buildDir.absolutePath}/tmp/pom.xml"
+//    pomFile = file(pomFilePath)
+//}
+//
+//configurations {
+//    pom
+//}
+//
+//artifacts {
+//    archives jar
+//    archives sourceJar
+//    archives javadocJar
+//    if (pomFile.exists()) {
+//        pom pomFile
+//    }
+//}
+//
+//task signJars(type: Sign, dependsOn: [jar, javadocJar, sourceJar]) {
+//    sign configurations.archives
+//}
+//
+//task signPom(type: Sign) {
+//    sign configurations.pom
+//}
+//
+//if (project.ext.pomFile.exists()) {
+//    task preparePublication(dependsOn: [signJars, signPom])
+//} else {
+//    task preparePublication(dependsOn: signJars)
+//}
+//
+//def getSignatureFiles = {
+//    def allFiles = project.tasks.signJars.signatureFiles.collect { it }
+//    def signedSources = allFiles.find { it.name.contains('-sources') }
+//    def signedJavadoc = allFiles.find { it.name.contains('-javadoc') }
+//    def signedJar = (allFiles - [signedSources, signJars])[0]
+//    return [
+//            [archive: signedSources, classifier: 'sources', extension: 'jar.asc'],
+//            [archive: signedJavadoc, classifier: 'javadoc', extension: 'jar.asc'],
+//            [archive: signedJar, classifier: 'null', extension: 'jar.asc']
+//    ]
+//}
+//
+//def getPomSignature = {
+//    return project.tasks.signPom.signatureFiles.collect { it }[0]
+//}
+
+def siteUrl = 'https://github.com/ItsDon/GradlePlugin'
+def gitUrl = 'https://github.com/ItsDon/GradlePlugin.git'
+def issueUrl = 'https://github.com/ItsDon/GradlePlugin/issues'
+
+install {
+    repositories.mavenInstaller {
+// generates POM.xml with proper parameters
+        pom {
+            project {
+                packaging 'jar'
+                name 'The Android Plugin for Don.'
+                url siteUrl
+
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        name 'itsdon'
+                        email 'qiaodong1991@gmail.com'
+                    }
+                }
+
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+        }
+    }
+}
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+bintray {
+    user = properties.getProperty("bintray.user")    //读取 local.properties 文件里面的 bintray.user
+    key = properties.getProperty("bintray.apikey")
+    configurations = ['archives']
+    pkg {
+        userOrg = 'itsdon123'
+        repo = "demoplugin" //bintray 上面 Package名字
+        name = "mylib" //bintray 上面项目名
+        desc = 'The Android Plugin for Don.'
+        websiteUrl = siteUrl
+        vcsUrl = gitUrl
+        issueTrackerUrl = issueUrl
+        licenses = ["Apache-2.0"]
+        labels = 'Groovy'
+        publicDownloadNumbers = true
+        publish = true
+    }
+}
+
+// 3475af4c35778dd6b5e4015b925b50c525708e6a
